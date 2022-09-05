@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');//middleware: ofrece una seguridad superficial. Algunos navegadores lo requieren.
+const { dbConnection } = require('../database/config');
 
 
 class Server{
@@ -10,6 +11,9 @@ class Server{
         this.port = process.env.PORT; //crea una propiedad llamada port donde guarda el puerto enviado a traves de una variable de entorno.
         this.usuariosPath = '/api/usuarios';
        
+        //conectar BD
+        this.conectarDB();
+
         //middlewares
         this.middlewares();//ejecutamos el metodo
         
@@ -17,7 +21,12 @@ class Server{
         this.routes();//ejecuta el metodo.
     }
     
-    
+    //BD
+    async conectarDB(){
+        await dbConnection();
+    }
+
+    //middleware
     middlewares(){
         
         //CORS= express().use(cors())
@@ -38,7 +47,7 @@ class Server{
 
 
     }
-
+//listar app
     listen(){
         this.app.listen(this.port, ()=>{
             console.log('Puerto corriendo en el puerto', this.port);

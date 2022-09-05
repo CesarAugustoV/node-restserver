@@ -1,52 +1,94 @@
 const { response } = require('express');//extraemos de express response, para tener mejor tipado.
+const bcryptjs = require('bcryptjs'); //encriptar contraseña
+
+const Usuario = require('../models/usuario');//requerimos la clase Usuario
+
 
 //controladores
+
 //GET
-const usuariosGet = (req = request, res = response) => {//aqui es comos si llamaramos a app.get(...)
-  //localhost:8080/api/usuarios?q=hola&apikey=1231523
-  //extraemos y desestructuramos req.query
-  const {q, nombre = "no name", apikey, page = 1, limit} = req.query; 
-    
+const usuariosGet = async(req = request, res = response) => {
+
+  // const {q, nombre = "no name", apikey, page = 1, limit} = req.query; 
+    const {limite=5, desde = 0} = req.query;
+    const query = {estado:true};
+    //se coloca el await para que se detenga el codigo hasta que se ejecuten ambas promesas
+    const [total, usuarios] = await Promise.all([//simplificar el codigo con promise.all para lanzar ambas promesas simultaneamente
+      Usuario.countDocuments(query),
+      Usuario.find(query)//retorna usuarios en estado true
+      .skip(Number(desde))//transformamos string a number
+      .limit(Number(limite))
+    ]);
+
     res.json({//respondemos en formato json.
-        msg: "Get API - usuariosGet",
-        q,
-        nombre,
-        apikey,
-        page,
-        limit
+        total,
+        usuarios
     })
   };
 
+  
 //POST
-  const usuariosPost = (req, res=response) => {
+  const usuariosPost = async (req, res=response) => {
+
       //obtener datos del body de un post
-      const {nombre, edad} = req.body;//desestructuramos el body enviado a traves del metodo post, extraemos nombre y edad.
-          
-      res.status('201').json({
-          msg: "Post API - usuariosPost",
-          nombre,//mostramos el nombre y edad por msg json.
-          edad
+      const {nombre, correo, password, rol} = req.body;
+      //instanciamos la clase Usuario, y le mandamos los campos 
+      //al modelo enviados desde el body
+      const usuario = new Usuario({nombre, correo, password, rol});
+
+      //encriptar la contraseña
+      const salt = bcryptjs.genSaltSync();
+      usuario.password = bcryptjs.hashSync(password, salt) //encriptamos la contraseña
+
+
+      //guardamos cambios en BD
+      await usuario.save();
+
+      res.json({
+          usuario
       })
     }
 
-    //PUT
-const usuariosPut = (req, res=response) => {
+
+
+//PUT
+const usuariosPut = async(req, res=response) => {
   
   //el dato obtenido a traves de la ruta, viene en la request.params.
   const {id} = req.params;
-    
-    
-    res.status('200').json({
-        msg: "Put API - usuariosPut",
-        id
-    })
+  const {_id, password, google, correo, ...resto} = req.body;
+
+  //TODO VALIDAR CONTRA BD
+  if(password){
+     //encriptar la contraseña
+     const salt = bcryptjs.genSaltSync();
+     resto.password = bcryptjs.hashSync(password, salt) //encriptamos la contraseña
   }
+
+  //buscalo por el id y actualizalo
+  const usuario = await Usuario.findByIdAndUpdate(id, resto);
+    
+    
+    res.json(usuario)
+  }
+
+
 //DELETE
-  const usuariosDelete = (req, res=response) => {
+  const usuariosDelete = async (req, res=response) => {
+
+    const {id} = req.params;
+
+    //fisicamente lo borramos
+    // const usuario = await Usuario.findByIdAndDelete(id);
+
+    const usuario = await Usuario.findByIdAndUpdate(id, {estado:false});//buscamos el usuario x id y modificamos.
+
     res.json({
-        msg: "Delete API - usuariosDelete"
+        usuario
     })
   }
+
+
 //PATCH
   const usuariosPatch = (req, res=response) => {
     res.status('500').json({

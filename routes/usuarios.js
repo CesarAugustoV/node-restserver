@@ -1,4 +1,9 @@
 const { Router } = require('express');//del paquete de express requerimos la funcion router
+const { check } = require('express-validator');
+const Role = require('../models/role');
+
+const {validarCampos} = require('../middlewares/validar-campos');
+const { esRoleValido, emailExiste, existeUsuarioPorId } = require('../helpers/db-validators');
 
 const { usuariosGet, 
         usuariosDelete,
@@ -13,14 +18,42 @@ const router = Router(); //llamamos la funcion.
 //al router le configuramos las rutas.
 //tipo de peticion y respuesta segun controlador.
 
+
+//GET
 router.get('/', usuariosGet);
 
-router.put('/:id', usuariosPut)//obtener el valor enviado a traves del url. localhost/api/usuarios/"valor-enviado"
 
-router.post('/', usuariosPost)
+//PUT
+router.put('/:id',[
+        check('id', 'No es un ID valido').isMongoId(),//es un mongo id?
+        check('id').custom(existeUsuarioPorId),//DB-VALIDATOR
+        check('rol').custom(esRoleValido),
+        validarCampos
 
-router.delete('/', usuariosDelete)
+], usuariosPut)//obtener el valor enviado a traves del url. localhost/api/usuarios/"valor-enviado"
 
+
+//POST
+//para los middleware se añaden en el segundo argumento.
+router.post('/',[
+        check('nombre', 'El nombre es obligatorio').not().isEmpty(),//usamos not() para negacion, is empty tiene que estar vacio.
+        check('password', 'El password debe de ser mas de 6 digitos.').isLength({min:6}),
+        check('correo', 'El correo no es valido').isEmail(), //usamos la funcion de express validator, check
+        check('correo').custom(emailExiste),
+        check('rol').custom(esRoleValido),//es lo mismo que..custom((rol)=>esRoleValido(rol))
+        validarCampos
+], usuariosPost)
+
+
+//DELETE
+router.delete('/:id',[
+        check('id', 'No es un ID valido').isMongoId(),//es un mongo id?
+        check('id').custom(existeUsuarioPorId),//DB-VALIDATOR
+        validarCampos
+], usuariosDelete)
+
+
+//PATCH
 router.patch('/', usuariosPatch)
 
 
