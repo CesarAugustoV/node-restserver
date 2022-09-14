@@ -9,7 +9,10 @@ class Server{
         //propiedades
         this.app = express(); //crea una propiedad app, cada vez que se ejecuta el constructor
         this.port = process.env.PORT; //crea una propiedad llamada port donde guarda el puerto enviado a traves de una variable de entorno.
+        
+        //path
         this.usuariosPath = '/api/usuarios';
+        this.authPath = '/api/auth';
        
         //conectar BD
         this.conectarDB();
@@ -43,6 +46,7 @@ class Server{
     routes(){
         
 //usamos el middleware para que cuando se envie una solicitud en localhost/api/usuarios, requiera el archivo user.js en la carpeta routes
+        this.app.use(this.authPath, require('../routes/auth'));
         this.app.use(this.usuariosPath, require('../routes/usuarios'));
 
 

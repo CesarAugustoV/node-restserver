@@ -2,7 +2,7 @@ const res = require('express/lib/response');
 const Role = require('../models/role');
 const Usuario = require('../models/usuario');
 
-
+//verficacion del rol
 const esRoleValido = async(rol='')=>{//verificacion personalizada
     const existeRol = await Role.findOne({rol});
     if(!existeRol){

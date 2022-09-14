@@ -1,10 +1,13 @@
 const { Router } = require('express');//del paquete de express requerimos la funcion router
 const { check } = require('express-validator');
-const Role = require('../models/role');
 
-const {validarCampos} = require('../middlewares/validar-campos');
+
+const {validarCampos, 
+        validarJWT, 
+        esAdminRole, 
+        tieneRole} = require('../middlewares');
+
 const { esRoleValido, emailExiste, existeUsuarioPorId } = require('../helpers/db-validators');
-
 const { usuariosGet, 
         usuariosDelete,
         usuariosPut,
@@ -47,6 +50,9 @@ router.post('/',[
 
 //DELETE
 router.delete('/:id',[
+        validarJWT,//validar jwt si da error no sigue con el resto, middleware
+        // esAdminRole,//validar rol de usuario,middleware
+        tieneRole('ADMIN_ROLE', 'VENTAS_ROLE'),
         check('id', 'No es un ID valido').isMongoId(),//es un mongo id?
         check('id').custom(existeUsuarioPorId),//DB-VALIDATOR
         validarCampos
